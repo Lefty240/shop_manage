@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import hub from '../../tool/hub'
 export default {
   data() {
     return {
@@ -49,6 +50,8 @@ export default {
     this.getMenuList()
     //重新获取并赋值
     this.activePath = window.sessionStorage.getItem('activePath')
+    hub.$on('saveNavState', this.saveNavState)
+
   },
   methods: {
     logout() {
@@ -70,6 +73,9 @@ export default {
       this.activePath = activePath
     }
   },
+  beforeDestroy() {
+    hub.$off('saveNavState')
+  }
 }
 </script>
 
