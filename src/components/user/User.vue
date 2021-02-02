@@ -39,7 +39,7 @@
             <el-button type="success" size="mini" icon="el-icon-edit" @click="editUser(scope.row.id)"></el-button>
             <el-button type="info" size="mini" icon="el-icon-delete" @click="deleteUser(scope.row.id)"></el-button>
             <el-tooltip effect="dark" content="分配角色" placement="top" :enterable="false">
-              <el-button type="warning" size="mini" icon="el-icon-setting">分配角色</el-button>
+              <el-button type="warning" size="mini" icon="el-icon-setting" @click="userRoleAllot(scope.row)">分配角色</el-button>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -87,6 +87,24 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="editVisible = false">取 消</el-button>
         <el-button type="primary" @click="realEditUser">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 分配角色对话框 -->
+    <el-dialog title="提示" :visible.sync="allotUserRight" width="30%" @close="listenRoleLog">
+      <div>
+        <p>用户名 :{{userRoleInfo.username}}</p>
+        <p>角色 :{{userRoleInfo.role_name}}</p>
+        <p>
+          分配新角色：
+          <el-select v-model="selectedRoleId" placeholder="请选择">
+            <el-option v-for="item in roleLists" :key="item.id" :label="item.roleName" :value="item.id"></el-option>
+          </el-select>
+        </p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="allotUserRight = false">取 消</el-button>
+        <el-button type="primary" @click="roleFinalAllot">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -142,7 +160,12 @@ export default {
         email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }, { validator: checkmail, trigger: 'blur' }],
         mobile: [{ required: true, message: '请输入手机', trigger: 'blur' }, { validator: checkmobile, trigger: 'blur' }]
 
-      }
+      },
+      //分配角色
+      allotUserRight: false,
+      userRoleInfo: '',
+      roleLists: '',
+      selectedRoleId: ''
     }
   },
   created() {
@@ -232,6 +255,35 @@ export default {
       }
       this.$message.success('用户删除成功')
       this.getUserList()
+    },
+    //角色分配
+    async userRoleAllot(userinfo) {
+      this.userRoleInfo = userinfo
+      //获取角色列表
+      const { data } = await this.$http.get('roles')
+      if (data.meta.status !== 200) {
+        return this.$message.error('获取角色列表失败')
+      }
+      this.roleLists = data.data
+
+      this.allotUserRight = true
+    },
+    //确定角色分配
+    async roleFinalAllot() {
+      if (!this.selectedRoleId) {
+        return this.$message.error('请正确选择角色')
+      }
+      const { data } = await this.$http.put(`users/${this.userRoleInfo.id}/role`, { rid: this.selectedRoleId })
+      if (data.meta.status !== 200) {
+        return this.$message.error('设置角色失败')
+      }
+      this.$message.success('设置角色成功')
+      this.getUserList()
+      this.allotUserRight = false
+    },
+    listenRoleLog() {
+      this.selectedRoleId = ''
+      this.userRoleInfo = ''
     }
   }
 }
